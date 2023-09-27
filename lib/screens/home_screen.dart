@@ -33,7 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   List<MaterialColor> loveColor = List.filled(50, Colors.grey);
   late Future<List<Product>> future;
-  bool _isLoading = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,179 +104,174 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: SizedBox(
         width: double.infinity,
-        height: 700,
-        child: ModalProgressHUD(
-          inAsyncCall: _isLoading,
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 18.0),
-                  child: FutureBuilder(
-                    future: GetAllCategories.future,
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        categories.clear();
-                        categories.add('All');
-                        categories.addAll(snapshot.data!);
-                      }
-                      return ChipsChoice<int>.single(
-                        value: tag,
-                        onChanged: (value) async {
-                          setState(() {
-                            tag = value;
-                            _isLoading = true;
-                          });
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 18.0),
+                child: FutureBuilder(
+                  future: GetAllCategories.future,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      categories.clear();
+                      categories.add('All');
+                      categories.addAll(snapshot.data!);
+                    }
+                    return ChipsChoice<int>.single(
+                      value: tag,
+                      onChanged: (value) async {
+                        setState(() {
+                          tag = value;
+
+                        });
         
-                          if (tag == 0) {
-                            setState(() {
-                              future = GetProducts.instance.getProducts();
-                              _isLoading = false;
-                            });
-                            return;
-                          }
-                          GetProductsByCategory.instance
-                              .execute(categories[value]);
+                        if (tag == 0) {
                           setState(() {
-                            future = GetProductsByCategory.future;
-                            _isLoading = false;
+                            future = GetProducts.instance.getProducts();
                           });
+                          return;
+                        }
+                        GetProductsByCategory.instance
+                            .execute(categories[value]);
+                        setState(() {
+                          future = GetProductsByCategory.future;
+
+                        });
+                      },
+                      choiceItems: C2Choice.listFrom<int, String>(
+                        source: categories,
+                        value: (i, v) => i,
+                        label: (i, v) => v,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            FutureBuilder<List<Product>>(
+              future: future,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return SliverGrid.builder(
+                    itemCount: snapshot.data!.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.98,
+                      crossAxisSpacing: 5,
+                      mainAxisSpacing: 20,
+                    ),
+                    itemBuilder: (context, index) {
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, kUpdateScreen,
+                              arguments: snapshot.data![index]);
                         },
-                        choiceItems: C2Choice.listFrom<int, String>(
-                          source: categories,
-                          value: (i, v) => i,
-                          label: (i, v) => v,
+                        child: Card(
+                          elevation: 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: CachedNetworkImage(
+                                    imageUrl: snapshot.data![index].image ??
+                                        kImageNotFound,
+                                    fit: BoxFit.contain,
+                                    progressIndicatorBuilder:
+                                        (context, url, downloadProgress) =>
+                                            Center(
+                                      child: CircularProgressIndicator(
+                                          value: downloadProgress.progress),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Center(
+                                            child: Icon(Icons.error)),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.only(left: 10, top: 5),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: [
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          snapshot.data![index].title!,
+                                          maxLines: 2,
+                                          style: const TextStyle(
+                                              overflow: TextOverflow.ellipsis,
+                                              fontSize: 15,
+                                              color: Colors.black54,
+                                              fontWeight: FontWeight.w400),
+                                          textAlign: TextAlign.left,
+                                        ),
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            '\$${snapshot.data![index].price!.toStringAsFixed(2)}',
+                                            style: const TextStyle(
+                                                overflow:
+                                                    TextOverflow.ellipsis,
+                                                color: Colors.black87,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                          IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                if (loveColor[index] ==
+                                                    Colors.grey) {
+                                                  loveColor[index] =
+                                                      Colors.red;
+                                                } else {
+                                                  loveColor[index] =
+                                                      Colors.grey;
+                                                }
+                                              });
+                                            },
+                                            icon: Icon(
+                                              CupertinoIcons.heart_fill,
+                                              color: Color(
+                                                  loveColor[index].value),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
-                  ),
-                ),
-              ),
-              FutureBuilder<List<Product>>(
-                future: future,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return SliverGrid.builder(
-                      itemCount: snapshot.data!.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.98,
-                        crossAxisSpacing: 5,
-                        mainAxisSpacing: 20,
-                      ),
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(context, kUpdateScreen,
-                                arguments: snapshot.data![index]);
-                          },
-                          child: Card(
-                            elevation: 1,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: SizedBox(
-                                    width: double.infinity,
-                                    child: CachedNetworkImage(
-                                      imageUrl: snapshot.data![index].image ??
-                                          kImageNotFound,
-                                      fit: BoxFit.contain,
-                                      progressIndicatorBuilder:
-                                          (context, url, downloadProgress) =>
-                                              Center(
-                                        child: CircularProgressIndicator(
-                                            value: downloadProgress.progress),
-                                      ),
-                                      errorWidget: (context, url, error) =>
-                                          const Center(
-                                              child: Icon(Icons.error)),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsets.only(left: 10, top: 5),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            snapshot.data![index].title!,
-                                            maxLines: 2,
-                                            style: const TextStyle(
-                                                overflow: TextOverflow.ellipsis,
-                                                fontSize: 15,
-                                                color: Colors.black54,
-                                                fontWeight: FontWeight.w400),
-                                            textAlign: TextAlign.left,
-                                          ),
-                                        ),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              '\$${snapshot.data![index].price!.toStringAsFixed(2)}',
-                                              style: const TextStyle(
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  color: Colors.black87,
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w500),
-                                            ),
-                                            IconButton(
-                                              onPressed: () {
-                                                setState(() {
-                                                  if (loveColor[index] ==
-                                                      Colors.grey) {
-                                                    loveColor[index] =
-                                                        Colors.red;
-                                                  } else {
-                                                    loveColor[index] =
-                                                        Colors.grey;
-                                                  }
-                                                });
-                                              },
-                                              icon: Icon(
-                                                CupertinoIcons.heart_fill,
-                                                color: Color(
-                                                    loveColor[index].value),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  } else {
-                    return const SliverToBoxAdapter(
-                      child: Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
+                  );
+                } else {
+                  return const SliverToBoxAdapter(
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
         ),
       ),
     );

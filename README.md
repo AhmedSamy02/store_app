@@ -1,3 +1,3 @@
 # store_app
 
-A new Flutter project.
+An application on GET, POST and PUT requests
